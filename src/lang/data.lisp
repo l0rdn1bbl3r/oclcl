@@ -239,3 +239,56 @@
 (defmethod cffi:translate-from-foreign (value (type double3-c))
   (cffi:with-foreign-slots ((x y z w) value (:struct double4))
     (make-double4 x y z w)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro define/export-lisp/foreign-vector-structs (name type cffi-type sizes)
+  `(progn
+     ,@(alexandria:mappend
+	(lambda (n)
+	  (let* ((slots (subseq '(x y z w) 0 n))
+		 (name-n (alexandria:symbolicate name (format nil "~d" n)))
+		 (c-name-n (alexandria:symbolicate name-n '-c))
+		 (constructor (alexandria:symbolicate 'make- name-n))
+		 (accessors (mapcar (lambda (slot) (alexandria:symbolicate name-n '- slot)) slots))
+		 (slot-vars-a (subseq '(ax ay az aw) 0 n))
+		 (slot-vars-b (subseq '(bx by bz bw) 0 n))
+		 (slot-bindings-a (mapcar (lambda (var slot) `(,var ,slot)) slot-vars-a slots))
+		 (slot-bindings-b (mapcar (lambda (var slot) `(,var ,slot)) slot-vars-b slots)))
+            `((defstruct (,name-n (:constructor ,constructor ,(subseq slots 0 n)))
+		,@(mapcar (lambda (slot) `(,slot nil :type ,type)) slots))
+	      (defun ,(alexandria:symbolicate name-n '-=) (a b)
+		(with-slots ,slot-bindings-a a
+		  (with-slots ,slot-bindings-b b
+		    (and ,@(mapcar (lambda (a b) `(= ,a ,b)) slot-vars-a slot-vars-b)))))
+	      (cffi:defcstruct (,name-n :class ,c-name-n)
+		,@(mapcar (lambda (slot) `(,slot ,cffi-type)) slots))
+	      (defmethod cffi:translate-into-foreign-memory ((value ,name-n) (type ,c-name-n) ptr)
+		(cffi:with-foreign-slots (,slots ptr (:struct ,name-n))
+		  (with-slots ,slot-bindings-a value
+		    (setf ,@(alexandria:mappend (lambda (a b) `(,a ,b)) slots slot-vars-a)))))
+	      (defmethod cffi:expand-into-foreign-memory ((value ,name-n) (type ,c-name-n) ptr)
+		`(cffi:with-foreign-slots (,',slots ,ptr (:struct ,',name-n))
+		   (with-slots ,',slot-bindings-a ,value
+		     (setf ,@',(alexandria:mappend (lambda (a b) `(,a ,b)) slots slot-vars-a)))))
+	      (defmethod cffi:translate-from-foreign (ptr (type ,c-name-n))
+		(cffi:with-foreign-slots (,slots ptr (:struct ,name-n))
+		  (,constructor ,@slots)))
+	      (defmethod cffi:expand-from-foreign (ptr (type ,c-name-n))
+		`(cffi:with-foreign-slots (,',slots ,ptr (:struct ,',name-n))
+		   (,',constructor ,@',slots)))
+	      (export ',name-n)
+	      (export ',constructor)
+	      ,@(mapcar (lambda (acc) `(export ',acc)) accessors)
+	      (export ',(alexandria:symbolicate name-n '-p))
+	      (export ',(alexandria:symbolicate name-n '-=)))))
+	sizes)))
+
+;; define structs
+(define/export-lisp/foreign-vector-structs long (signed-byte 64) :int64 (2 3 4))
+(define/export-lisp/foreign-vector-structs ulong (unsigned-byte 64) :uint64 (2 3 4))
+(define/export-lisp/foreign-vector-structs int (signed-byte 32) :int32 (2 3 4))
+(define/export-lisp/foreign-vector-structs uint (unsigned-byte 32) :uint32 (2 3 4))
+(define/export-lisp/foreign-vector-structs double double-float :double (2))
+(define/export-lisp/foreign-vector-structs float single-float :float (2))
+
