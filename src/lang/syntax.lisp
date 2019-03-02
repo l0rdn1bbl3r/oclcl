@@ -39,6 +39,11 @@
            :array-reference-p
            :array-reference-expr
            :array-reference-indices
+           ;; Reference - Array
+           :vector-numeric-reference-p
+           :vector-numeric-reference-expr
+           :vector-numeric-reference-index
+           :vref
            ;; Inline-if
            :inline-if-p
            :inline-if-test-expression
@@ -184,6 +189,7 @@
 
 (defun reference-p (form)
   (or (variable-reference-p form)
+      (vector-numeric-reference-p form)
       (structure-reference-p form)
       (array-reference-p form)))
 
@@ -238,6 +244,28 @@
     (('aref) (error "The expression ~S is malformed." form))
     (_ (error "The value ~S is an invalid expression." form))))
 
+;;;
+;;; Reference - Numeric Vector Types Reference
+;;;
+
+(defun vector-numeric-reference-p (form)
+  (cl-pattern:match form
+    (('vref _ _) t)
+    (_ nil)))
+
+(defun vector-numeric-reference-expr (form)
+  (cl-pattern:match form
+    (('vref expr _) expr)
+    (('vref . _) (error "The expression ~S is malformed." form))
+    (_ (error "The value ~S is an invalid expression." form))))
+
+(defun vector-numeric-reference-index (form)
+  (cl-pattern:match form
+    (('vref _ index) (if (numberp index)
+                         index
+                         (error "The expression ~S is malformed." form)))
+    (('vref) (error "The expression ~S is malformed." form))
+    (_ (error "The value ~S is an invalid expression." form))))
 
 ;;;
 ;;; Inline-if
