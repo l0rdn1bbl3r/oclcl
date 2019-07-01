@@ -136,7 +136,6 @@
   (cffi:with-foreign-slots ((x y z) value (:struct float3))
     (make-float3 x y z)))
 
-
 ;;;
 ;;; Float4
 ;;;
