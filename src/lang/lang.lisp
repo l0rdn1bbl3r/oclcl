@@ -207,6 +207,7 @@ APIs for manipulating those programs (e.g. compiling, lookup...) are not exporte
                :include '(:clk-local-mem-fence
                           :clk-global-mem-fence
                           :with-local-memory
+                          :with-array
                           :set))
 
 ;; reexport symbols of oclcl built-in functions except the ones

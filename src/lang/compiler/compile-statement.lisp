@@ -36,6 +36,7 @@
     ((progn-p form) (compile-progn form var-env func-env))
     ((return-p form) (compile-return form var-env func-env))
     ((declare-p form) (compile-declare form var-env func-env))
+    ((with-array-p form) (compile-with-array form var-env func-env))
     ((function-p form) (compile-function form var-env func-env))
     (t (error "The value ~S is an invalid statement." form))))
 
@@ -225,7 +226,7 @@
                    (type1 (compile-type type))
                    (dims1 (compile-with-local-memory-spec-dimensions
                             dims var-env func-env)))
-               ;; OpenCL v1.2 dr19: 6.5 Address Spece Qualifiers
+               ;; OpenCL v1.2 dr19: 6.5 Address Space Qualifiers
                (format nil "__local ~A ~A~{[~A]~};~%" type1 var1 dims1)))))
     (format nil "~{~A~}" (mapcar #'aux specs))))
 
@@ -307,3 +308,50 @@
   (format nil "#~{~A~^ ~}~%" (cdr form)))
 
 
+;;;
+;;; Array declaration
+;;;
+
+;; this is basically the same as WITH-LOCAL-MEMORY but w/t the "__local" Address Space Qualifier
+
+(defun var-env-add-with-array-specs (var-env specs)
+  (flet ((aux (var-env0 spec)
+           (let* ((var (with-array-spec-var spec))
+                  (type (with-array-spec-type spec))
+                  (dims (length (with-array-spec-dimensions spec))))
+             (let ((type1 (array-type type dims)))
+               (variable-environment-add-variable var type1 var-env0)))))
+    (reduce #'aux specs :initial-value var-env)))
+
+(defun compile-with-array-spec-dimensions (dims var-env func-env)
+  (flet ((aux (dim)
+           (unless (member (type-of-expression dim var-env func-env)
+                           oclcl.lang.built-in::+scalar-integer-types+)
+             (error "Size ~a of array has non-integer type." dim))
+           (compile-expression dim var-env func-env)))
+    (mapcar #'aux dims)))
+
+(defun compile-with-array-specs (specs var-env func-env)
+  (flet ((aux (spec)
+           (let ((var (with-array-spec-var spec))
+                 (type (with-array-spec-type spec))
+                 (dims (with-array-spec-dimensions spec))) 
+             (let ((var1 (compile-symbol var))
+                   (type1 (compile-type type))
+                   (dims1 (compile-with-array-spec-dimensions
+                            dims var-env func-env)))
+               (format nil "~A ~A~{[~A]~};~%" type1 var1 dims1)))))
+    (format nil "~{~A~}" (mapcar #'aux specs))))
+
+(defun compile-with-array-statements (statements var-env func-env)
+  (compile-statement `(progn ,@statements) var-env func-env))
+
+(defun compile-with-array (form var-env func-env)
+  (let ((specs (with-array-specs form))
+        (statements (with-array-statements form)))
+    (let ((var-env1 (var-env-add-with-array-specs var-env specs)))
+      (let ((specs1 (compile-with-array-specs specs var-env func-env))
+            (statements1 (compile-with-array-statements statements var-env1 func-env)))
+        (let ((specs2 (indent 2 specs1))
+              (statements2 (indent 2 statements1)))
+          (format nil "{~%~A~A}~%" specs2 statements2))))))
