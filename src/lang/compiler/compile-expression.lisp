@@ -32,6 +32,7 @@
     ((reference-p form) (compile-reference form var-env func-env))
     ((inline-if-p form) (compile-inline-if form var-env func-env))
     ((arithmetic-p form) (compile-arithmetic form var-env func-env))
+    ((vector-literal-p form) (compile-vector-literal form var-env func-env))
     ((function-p form) (compile-function form var-env func-env))
     (t (error "The value ~S is an invalid expression." form))))
 
@@ -107,6 +108,8 @@
      (compile-variable-reference form var-env))
     ((structure-reference-p form)
      (compile-structure-reference form var-env func-env))
+    ((vector-numeric-reference-p form)
+     (compile-vector-numeric-reference form var-env func-env))
     ((array-reference-p form)
      (compile-array-reference form var-env func-env))
     (t (error "The value ~S is an invalid form." form))))
@@ -163,6 +166,22 @@
     (let ((expr1 (compile-expression expr var-env func-env))
           (indices1 (compile-array-indices indices var-env func-env)))
       (format nil "~A~{[~A]~}" expr1 indices1))))
+
+;;;
+;;; Reference - Numeric Vector Types Reference
+;;;
+
+(defun compile-vector-numeric-reference (form var-env func-env)
+  (let ((expr (vector-numeric-reference-expr form))
+        (idx (vector-numeric-reference-index form)))
+    (let ((expr-type (type-of-expression expr var-env func-env)))
+      (unless (and (< idx (vector-type-length expr-type))
+                   (<= 0 idx))
+        (error "The vector type reference ~S is invalid." form)))
+    (let ((expr1 (compile-expression expr var-env func-env)))
+      (format nil "~A.s~A" expr1 (if (<= idx 9)
+                                     idx
+                                     (svref #(a b c d e f) (- idx 10)))))))
 
 
 ;;;
@@ -265,3 +284,44 @@
       (if operands1
           (format nil "~A(~{~A~^, ~})" operator1 operands1)
           (format nil "~A()" operator1))))
+
+;;;
+;;; Vector Literal
+;;;
+
+(defun vector-type-length (vec-type)
+  (let ((str (string vec-type)))
+    (values (parse-integer (remove-if #'alpha-char-p str))
+            (intern (remove-if-not #'alpha-char-p str)))))
+
+(defun compile-vector-literal (form var-env func-env)
+  (flet ((%error (t1 t2)
+           (error "The types ~A and ~A of the vector and its contents don't match." t1 t2)))
+    (destructuring-bind (vec-type &rest contents) form
+      (multiple-value-bind (n base-type) (vector-type-length vec-type)
+        (case (length contents)
+          (1 (let ((cont-type (type-of-expression (car contents) var-env func-env)))
+               (if (eq base-type stype)
+                   (format nil "~((~A)(~A)~)" vec-type (compile-expression (car contents)
+                                                                           var-env func-env))
+                   (%error vec-type stype))))
+          (t (let ((sum (reduce #'+ (mapcar (lambda (expr)
+                                              (let ((type (type-of-expression expr var-env func-env)))
+                                                (cond ((eq type base-type)
+                                                       1)
+                                                      ((scalar-type-p type)
+                                                       (%error vec-type type))
+                                                      (t
+                                                       (multiple-value-bind (m stype)
+                                                           (vector-type-length type)
+                                                         (if (eq base-type stype)
+                                                             m
+                                                             (%error vec-type stype)))))))
+                                            contents))))
+               (if (= n sum)
+                   (format nil "~((~A)(~{~A~^, ~})~)" vec-type
+                           (mapcar (lambda (expr)
+                                     (compile-expression expr var-env func-env))
+                                   contents))
+                   (error "The lengths ~A and ~A of the vector and its contents don't match."
+                          n sum)))))))))

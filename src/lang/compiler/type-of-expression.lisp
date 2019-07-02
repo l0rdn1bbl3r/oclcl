@@ -29,6 +29,7 @@
     ((reference-p form) (type-of-reference form var-env func-env))
     ((inline-if-p form) (type-of-inline-if form var-env func-env))
     ((arithmetic-p form) (type-of-arithmetic form var-env func-env))
+    ((vector-literal-p form) (car form))
     ((function-p form) (type-of-function form var-env func-env))
     (t (error "The value ~S is an invalid expression." form))))
 
@@ -91,6 +92,8 @@
      (type-of-variable-reference form var-env))
     ((structure-reference-p form)
      (type-of-structure-reference form var-env func-env))
+    ((vector-numeric-reference-p form)
+     (type-of-vector-numeric-reference form var-env func-env))
     ((array-reference-p form)
      (type-of-array-reference form var-env func-env))
     (t (error "The value ~S is an invalid expression." form))))
@@ -139,6 +142,17 @@
         (error "The dimension of array reference ~S is invalid." form))
       (array-type-base expr-type))))
 
+;;;
+;;; Reference - Vector Type Numeric Reference
+;;;
+
+(defun type-of-vector-numeric-reference (form var-env func-env)
+  (let ((expr (vector-numeric-reference-expr form))
+        (index (vector-numeric-reference-index form)))
+    (let ((expr-type (type-of-expression expr var-env func-env)))
+      (find (remove-if-not #'alpha-char-p (string expr-type))
+            oclcl.lang.built-in::+scalar-number-types+
+            :test #'string-equal))))
 
 ;;;
 ;;; Inline-if

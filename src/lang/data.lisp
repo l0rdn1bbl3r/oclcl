@@ -374,7 +374,7 @@
 		 (name-n (alexandria:symbolicate name (format nil "~d" n)))
 		 (c-name-n (alexandria:symbolicate name-n '-c))
 		 (constructor (alexandria:symbolicate 'make- name-n))
-		 (slot-vars-a (subseq '(ax ay az aw) 0 n))
+                 (slot-vars-a (subseq '(ax ay az aw) 0 n))
 		 (slot-vars-b (subseq '(bx by bz bw) 0 n))
 		 (slot-bindings-a (mapcar (lambda (var slot) `(,var ,slot)) slot-vars-a slots))
 		 (slot-bindings-b (mapcar (lambda (var slot) `(,var ,slot)) slot-vars-b slots)))

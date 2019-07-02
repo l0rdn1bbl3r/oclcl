@@ -7,184 +7,202 @@
 (in-package :cl-user)
 (defpackage oclcl.lang.built-in
   (:use :cl
-        :oclcl.lang.type
+   :oclcl.lang.type
         :oclcl.lang.data)
   (:export ;; address-of operator
-           :pointer
+   :pointer
 
-           ;; Built-in work-item functions
-           :get-work-dim
-           :get-global-size
-           :get-global-id
-           :get-local-size
-           :get-local-id
-           :get-num-groups
-           :get-group-id
-           :get-global-offset
+   ;; Built-in work-item functions
+   :get-work-dim
+   :get-global-size
+   :get-global-id
+   :get-local-size
+   :get-local-id
+   :get-num-groups
+   :get-group-id
+   :get-global-offset
 
-           ;; Built-in type casting
-           :to-int
-           :to-float
+   ;; Built-in type casting
+   :to-int
+   :to-float
 
-           ;; Built-in math functions
-           :acos
-           :acosh
-           :acospi
-           :asin
-           :asinh
-           :asinpi
-           :atan
-           :atan2
-           :cbrt
-           :ceil
-           :copysign
-           :cos
-           :cosh
-           :cospi
-           :erfc
-           :erf
-           :exp
-           :exp2
-           :exp10
-           :expm1
-           :fabs
-           :fdim
-           :floor
-           :fma
-           :fmax
-           :fmin
-           :fmod
-           :fract
-           :frexp
-           :hypot
-           :ilogb
-           :ldexp
-           :lgamma
-           :lgamma_r
-           :log
-           :log2
-           :log10
-           :log1p
-           :logb
-           :mad
-           :maxmag
-           :minmag
-           :modf
-           :nan
-           :nextafter
-           :pow
-           :pown
-           :powr
-           :remainder
-           :remquo
-           :rint
-           :rootn
-           :round
-           :rsqrt
-           :sin
-           :sincos
-           :sinh
-           :sinpi
-           :sqrt
-           :tan
-           :tanh
-           :tanpi
-           :tgamma
-           :trunc
+   ;; Built-in math functions
+   :acos
+   :acosh
+   :acospi
+   :asin
+   :asinh
+   :asinpi
+   :atan
+   :atan2
+   :cbrt
+   :ceil
+   :copysign
+   :cos
+   :cosh
+   :cospi
+   :erfc
+   :erf
+   :exp
+   :exp2
+   :exp10
+   :expm1
+   :fabs
+   :fdim
+   :floor
+   :fma
+   :fmax
+   :fmin
+   :fmod
+   :fract
+   :frexp
+   :hypot
+   :ilogb
+   :ldexp
+   :lgamma
+   :lgamma_r
+   :log
+   :log2
+   :log10
+   :log1p
+   :logb
+   :mad
+   :maxmag
+   :minmag
+   :modf
+   :nan
+   :nextafter
+   :pow
+   :pown
+   :powr
+   :remainder
+   :remquo
+   :rint
+   :rootn
+   :round
+   :rsqrt
+   :sin
+   :sincos
+   :sinh
+   :sinpi
+   :sqrt
+   :tan
+   :tanh
+   :tanpi
+   :tgamma
+   :trunc
 
-           :half-cos
-           :half-divide
-           :half-exp
-           :half-exp2
-           :half-exp10
-           :half-log
-           :half-log2
-           :half-log10
-           :half-powr
-           :half-recip
-           :half-rsqrt
-           :half-sin
-           :half-sqrt
-           :half-tan
+   :half-cos
+   :half-divide
+   :half-exp
+   :half-exp2
+   :half-exp10
+   :half-log
+   :half-log2
+   :half-log10
+   :half-powr
+   :half-recip
+   :half-rsqrt
+   :half-sin
+   :half-sqrt
+   :half-tan
 
-           :native-cos
-           :native-divide
-           :native-exp
-           :native-exp2
-           :native-exp10
-           :native-log
-           :native-log2
-           :native-log10
-           :native-powr
-           :native-recip
-           :native-rsqrt
-           :native-sin
-           :native-sqrt
-           :native-tan
+   :native-cos
+   :native-divide
+   :native-exp
+   :native-exp2
+   :native-exp10
+   :native-log
+   :native-log2
+   :native-log10
+   :native-powr
+   :native-recip
+   :native-rsqrt
+   :native-sin
+   :native-sqrt
+   :native-tan
 
-           :abs
-           :abs-diff
-           :add-sat
-           :hadd
-           :rhadd
-           :clamp
-           :clz
-           :mad-hi
-           :mad-sat
-           :max
-           :min
-           :mul-hi
-           :rotate
-           :sub-sat
-           :upsample
-           :popcount
+   :abs
+   :abs-diff
+   :add-sat
+   :hadd
+   :rhadd
+   :clamp
+   :clz
+   :mad-hi
+   :mad-sat
+   :max
+   :min
+   :mul-hi
+   :rotate
+   :sub-sat
+   :upsample
+   :popcount
 
-           :clamp
-           :degrees
-           :max
-           :min
-           :mix
-           :radians
-           :step
-           :smoothstep
-           :sign
+   :clamp
+   :degrees
+   :max
+   :min
+   :mix
+   :radians
+   :step
+   :smoothstep
+   :sign
 
-           :cross
-           :dot
-           :distance
-           :length
-           :normalize
-           :fast-distance
-           :fast-length
-           :fast-normalize
+   :cross
+   :dot
+   :distance
+   :length
+   :normalize
+   :fast-distance
+   :fast-length
+   :fast-normalize
            
-           :barrier
+   :barrier
 
-           :mem-fence
-           :read-mem-fence
-           :write-mem-fence
+   :mem-fence
+   :read-mem-fence
+   :write-mem-fence
 
-           :atomic-add
-           :atomic-sub
-           :atomic-xchg
-           :atomic-inc
-           :atomic-dec
-           :atomic-cmpxchg
-           :atomic-min
-           :atomic-max
-           :atomic-and
-           :atomic-or
-           :atomic-xor
+   :atomic-add
+   :atomic-sub
+   :atomic-xchg
+   :atomic-inc
+   :atomic-dec
+   :atomic-cmpxchg
+   :atomic-min
+   :atomic-max
+   :atomic-and
+   :atomic-or
+   :atomic-xor
 
-           :vec-step
-           :shuffle
+   :vec-step
+   :shuffle
 
-           :printf
+   :printf
 
-           ;; Interfaces
-           :built-in-function-return-type
-           :built-in-function-infix-p
-           :built-in-function-c-name))
+   ;; Interfaces
+   :built-in-function-return-type
+   :built-in-function-infix-p
+   :built-in-function-c-name
+   :vector-literal-p
+
+   ;; Vector type accessors for 8 and 16 elts long vector types
+   :s0
+   :s1
+   :s2
+   :s4
+   :s5
+   :s6
+   :s7
+   :s8
+   :s9
+   :s10
+   :s11
+   :s12
+   :s13
+   :s14
+   :s15))
 (in-package :oclcl.lang.built-in)
 
 (defparameter +scalar-signed-integer-types+ '(char short int long))
@@ -366,12 +384,16 @@
              ((float) float* nil "&")
              ((double) double* nil "&"))
     ;; built-in vector constructor
-    uint4 (((uint uint uint uint) uint4 nil "(uint4)")
-           ((int int int int) uint4 nil "(uint4)"))
-    float3 (((float float float) float3 nil "(float3)"))
-    float4 (((float float float float) float4 nil "(float4)"))
-    double3 (((double double double) double3 nil "(double3)"))
-    double4 (((double double double double) double4 nil "(double4)"))
+    ;; now taken care of by compile-expression to allow all the overloaded constructors
+    ;; 
+    ;; uint4 (((uint uint uint uint) uint4 nil "(uint4)")
+    ;;        ((int int int int) uint4 nil "(uint4)"))
+    ;; float3 (((float float float) float3 nil "(float3)"))
+    ;; float4 (((float float float float) float4 nil "(float4)"))
+    ;; double2 (((double double) double2 nil "(double2)"))
+    ;; double3 (((double double double) double3 nil "(double3)"))
+    ;; double4 (((double double double double) double4 nil "(double4)"))
+    ;;
     ;; type casting intrinsics
     double-to-int-rn (((double) int nil "__double2int_rn"))
     to-int ((,#'allow-any-types int nil "(int)"))
@@ -747,3 +769,12 @@
 
 (defun built-in-function-c-name (name argument-types)
   (cadddr (inferred-function name argument-types)))
+
+;;;
+;;; Vector Literal
+;;;
+
+(defun vector-literal-p (form)
+  (cl-pattern:match form
+    ((vec-type . _) (find vec-type +vector-number-types+))
+    (_ nil)))

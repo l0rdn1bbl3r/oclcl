@@ -121,7 +121,7 @@
 
 (defun scalar-cffi-type (type)
   (unless (scalar-type-p type)
-    (error "The vaue ~S is an invalid type." type))
+    (error "The value ~S is an invalid type." type))
   (cadr (assoc type +scalar-types+)))
 
 (defun scalar-cffi-type-size (type)
@@ -129,7 +129,7 @@
 
 (defun scalar-opencl-type (type)
   (unless (scalar-type-p type)
-    (error "The vaue ~S is an invalid type." type))
+    (error "The value ~S is an invalid type." type))
   (caddr (assoc type +scalar-types+)))
 
 
@@ -147,6 +147,9 @@
                       (float4-y "y" float)
                       (float4-z "z" float)
                       (float4-w "w" float)))
+    ;; numeric accessors are defined as VREF in the compiler see COMPILE-EXPRESSION
+    (float8 "float8")
+    (float16 "float16")
     (double2 "double2" ((double2-x "x" double)
                         (double2-y "y" double)))
     (double3 "double3" ((double3-x "x" double)
@@ -156,6 +159,8 @@
                         (double4-y "y" double)
                         (double4-z "z" double)
                         (double4-w "w" double)))
+    (double8 "double8")
+    (double16 "double16")
     (int2 "int2" ((int2-x "x" int)
                   (int2-y "y" int)))
     (int3 "int3" ((int3-x "x" int)
@@ -165,6 +170,8 @@
                   (int4-y "y" int)
                   (int4-z "z" int)
                   (int4-w "w" int)))
+    (int8 "int8")
+    (int16 "int16")
     (uint2 "uint2" ((uint2-x "x" uint)
                     (uint2-y "y" uint)))
     (uint3 "uint3" ((uint3-x "x" uint)
@@ -174,6 +181,8 @@
                     (uint4-y "y" uint)
                     (uint4-z "z" uint)
                     (uint4-w "w" uint)))
+    (uint8 "uint8")
+    (uint16 "uint16")
     (long2 "long2" ((long2-x "x" long)
                     (long2-y "y" long)))
     (long3 "long3" ((long3-x "x" long)
@@ -183,6 +192,8 @@
                     (long4-y "y" long)
                     (long4-z "z" long)
                     (long4-w "w" long)))
+    (long8 "long8")
+    (long16 "long16")
     (ulong2 "ulong2" ((ulong2-x "x" ulong)
                       (ulong2-y "y" ulong)))
     (ulong3 "ulong3" ((ulong3-x "x" ulong)
@@ -191,7 +202,9 @@
     (ulong4 "ulong4" ((ulong4-x "x" ulong)
                       (ulong4-y "y" ulong)
                       (ulong4-z "z" ulong)
-                      (ulong4-w "w" ulong)))))
+                      (ulong4-w "w" ulong)))
+    (ulong8 "ulong8")
+    (ulong16 "ulong16")))
 
 (defparameter +structure-types+
   (mapcar #'car +structure-table+))
@@ -202,7 +215,7 @@
 
 (defun structure-cffi-type (type)
   (unless (structure-type-p type)
-    (error "The vaue ~S is an invalid type." type))
+    (error "The value ~S is an invalid type." type))
   `(:struct ,type))
 
 (defun structure-cffi-type-size (type)
@@ -210,12 +223,12 @@
 
 (defun structure-opencl-type (type)
   (unless (structure-type-p type)
-    (error "The vaue ~S is an invalid type." type))
+    (error "The value ~S is an invalid type." type))
   (cadr (assoc type +structure-table+)))
 
 (defun structure-accessors (type)
   (unless (structure-type-p type)
-    (error "The vaue ~S is an invalid type." type))
+    (error "The value ~S is an invalid type." type))
   (caddr (assoc type +structure-table+)))
 
 
