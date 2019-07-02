@@ -115,7 +115,17 @@
            :argument-var
            :argument-type
            ;; Compiler directive
-           :declare-p))
+           :declare-p
+           ;; Array declaration
+           :with-array
+           :with-array-p
+           :with-array-specs
+           :with-array-statements
+           ;; With-array statement - spec
+           :with-array-spec-p
+           :with-array-spec-var
+           :with-array-spec-type
+           :with-array-spec-dimensions))
 (in-package :oclcl.lang.syntax)
 
 
@@ -652,3 +662,55 @@
     (('declare . _) t)
     (_ nil)))
 
+
+;;;
+;;; With-array statement
+;;;
+
+(defun with-array-p (object)
+  (cl-pattern:match object
+    (('with-array . _) t)
+    (_ nil)))
+
+(defun with-array-specs (form)
+  (cl-pattern:match form
+    (('with-array specs . _)
+     (if (every #'with-array-spec-p specs)
+         specs
+         (error "The statement ~S is malformed." form)))
+    (('with-array . _)
+     (error "The statement ~S is malformed." form))
+    (_ (error "The value ~S is an invalid statement." form))))
+
+(defun with-array-statements (form)
+  (cl-pattern:match form
+    (('with-array _ . statements) statements)
+    (('with-array . _)
+     (error "The statement ~S is malformed." form))
+    (_ (error "The value ~S is an invalid statement." form))))
+
+
+;;;
+;;; With-array statement - spec
+;;;
+
+(defun with-array-spec-p (object)
+  (cl-pattern:match object
+    ((var type _ . _) (and (oclcl-symbol-p var)
+                           (oclcl-type-p type)))
+    (_ nil)))
+
+(defun with-array-spec-var (spec)
+  (unless (with-array-spec-p spec)
+    (error "The value ~S is an invalid array spec." spec))
+  (car spec))
+
+(defun with-array-spec-type (spec)
+  (unless (with-array-spec-p spec)
+    (error "The value ~S is an invalid array spec." spec))
+  (cadr spec))
+
+(defun with-array-spec-dimensions (spec)
+  (unless (with-array-spec-p spec)
+    (error "The value ~S is an invalid array spec." spec))
+  (cddr spec))

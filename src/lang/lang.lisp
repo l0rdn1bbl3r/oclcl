@@ -208,7 +208,8 @@ APIs for manipulating those programs (e.g. compiling, lookup...) are not exporte
                           :clk-global-mem-fence
                           :with-local-memory
                           :set
-                          :vref))
+                          :vref
+                          :with-array))
 
 ;; reexport symbols of oclcl built-in functions except the ones
 ;; exported from COMMON-LISP package
