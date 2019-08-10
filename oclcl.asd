@@ -28,6 +28,7 @@
                    (:file "environment")
                    (:file "built-in")
                    (:file "program")
+                   (:file "user-type")
                    (:file "compiler/compile-data")
                    (:file "compiler/compile-type")
                    (:file "compiler/type-of-expression")

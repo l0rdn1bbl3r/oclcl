@@ -10,7 +10,8 @@
         :oclcl.lang.type
         :oclcl.lang.syntax
         :oclcl.lang.environment
-        :oclcl.lang.built-in)
+        :oclcl.lang.built-in
+        :oclcl.lang.user-type)
   (:export :type-of-expression))
 (in-package :oclcl.lang.compiler.type-of-expression)
 
@@ -30,6 +31,7 @@
     ((inline-if-p form) (type-of-inline-if form var-env func-env))
     ((arithmetic-p form) (type-of-arithmetic form var-env func-env))
     ((vector-literal-p form) (car form))
+    ((oclcl.lang.type::ocl-user-struct-p (car form)) (type-of-user-struct form var-env func-env))
     ((function-p form) (type-of-function form var-env func-env))
     (t (error "The value ~S is an invalid expression." form))))
 
@@ -222,3 +224,18 @@
         (operands (function-operands form)))
     (let ((argument-types (type-of-operands operands var-env func-env)))
       (built-in-function-return-type operator argument-types))))
+
+;;;
+;;; Type of user struct
+;;;
+
+(defun type-of-user-struct (form var-env func-env)
+  (let ((user-struct (symbol-user-struct (car form))))
+    (mapc (lambda (arg acc)
+            (let ((arg-type (type-of-expression arg var-env func-env))
+                  (slot-type (struct-slot-type (symbol-user-struct-slot acc))))
+              (unless (equal arg-type slot-type)
+                (error "Argument type ~a and slot type ~a don't match." arg-type slot-type))))
+          (cdr form)
+          (struct-accessors user-struct))
+    (struct-ocl-name user-struct)))

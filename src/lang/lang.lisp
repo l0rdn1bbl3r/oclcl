@@ -215,4 +215,6 @@ APIs for manipulating those programs (e.g. compiling, lookup...) are not exporte
 ;; exported from COMMON-LISP package
 (reexport-from :oclcl.lang.built-in)
 
+(reexport-from :oclcl.lang.user-type)
+
 

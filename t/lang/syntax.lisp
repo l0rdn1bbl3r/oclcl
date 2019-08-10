@@ -8,7 +8,8 @@
 (defpackage oclcl-test.lang.syntax
   (:use :cl :prove
         :oclcl.lang.data
-        :oclcl.lang.syntax))
+        :oclcl.lang.syntax
+        :oclcl.lang.type))
 (in-package :oclcl-test.lang.syntax)
 
 (plan nil)
@@ -69,7 +70,7 @@
 ;;;
 
 (subtest "Reference"
-
+  
   (is (reference-p 'x) t
       "basic case 1")
   (is (reference-p '(float3-x x)) t
@@ -81,7 +82,16 @@
   (is (reference-p '(aref x i)) t
       "basic case 5")
   (is (reference-p '(aref x i i)) t
-      "basic case 6"))
+      "basic case 6")
+  (setf (symbol-user-struct 'foo)
+        (make-instance 'ocl-struct :ocl-name 'foo :slots '(bar baz) :accessors '(foo-bar foo-baz))
+        (symbol-user-struct-slot 'foo-bar)
+        (make-instance 'ocl-struct-slot :struct 'foo :type 'int :accessor 'foo-bar :ocl-name 'bar)
+        (symbol-user-struct-slot 'foo-baz)
+        (make-instance 'ocl-struct-slot :struct 'foo :type 'float :accessor 'foo-baz :ocl-name
+                       'baz))
+  (is (reference-p '(foo-bar x)) t)
+  (is (reference-p '(foo-boo x)) nil))
 
 
 ;;;

@@ -9,6 +9,7 @@
   (:use :cl
         :oclcl.lang.util
         :oclcl.lang.type
+        :oclcl.lang.user-type
         :oclcl.lang.syntax
         :oclcl.lang.environment
         :oclcl.lang.program
@@ -19,7 +20,6 @@
         :oclcl.lang.compiler.type-of-expression)
   (:export :compile-program))
 (in-package :oclcl.lang.compiler.compile-program)
-
 
 ;;;
 ;;; Program to Environment
@@ -104,8 +104,7 @@
   (let ((c-name (program-memory-c-name program name))
         (qualifiers (program-address-space-qualifiers program name))
         (expression (program-memory-expression program name)))
-    (let ((type1 (compile-type
-                  (type-of-expression expression nil nil)))
+    (let ((type1 (compile-type (type-of-expression expression nil nil)))
           (qualifiers1 (mapcar #'compile-address-space-qualifier qualifiers))
           (expression1 (compile-expression expression
                         (program->variable-environment program nil)
@@ -191,12 +190,43 @@
 
 ~{~A~^~%~}" definitions)))))
 
+(defun compile-struct-definitions (program)
+  "Create the opencl c definitions for the user defined structs in PROGRAM and those programs in its
+USE-LIST."
+  (labels ((collect-structs (programs structs)
+             (if (null programs)
+                 structs
+                 (let ((use-list (program-use-list (car programs)))
+                       (name (program-name (car programs))))
+                   (collect-structs (append (cdr programs) use-list)
+                                    (append (program-user-structs name) structs))))))
+    (let ((structs (collect-structs (list program) nil)))
+      (with-output-to-string (str)
+        (format str "/**~% *  Struct definitions~% */~%~%")
+        (mapc (lambda (name)
+                (let ((struct (symbol-user-struct name)))
+                  (format str "typedef struct ~a { " (struct-c-name struct))
+                  (mapc (lambda (acc)
+                          (let ((slot (symbol-user-struct-slot acc)))
+                            (format str "~a ~a; "
+                                    (let ((type (struct-slot-type slot)))
+                                      (if (array-type-p type)
+                                          (error "Slots of array type are not currently supported.")
+                                          (compile-type type)))
+                                    (struct-slot-c-name slot))))
+                        (struct-accessors struct))
+                  (format str "} ~a;~%" (struct-c-name struct))))
+              structs)))))
+
 (defun compile-program (program)
   (let ((includes (compile-includes))
         (memories (compile-memories program))
         (prototypes (compile-prototypes program))
-        (definitions (compile-definitions program)))
-    (format nil "~A~%~%~A~%~%~A~%~%~A" includes
-                                       memories
-                                       prototypes
-                                       definitions)))
+        (definitions (compile-definitions program))
+        (struct-definitions (compile-struct-definitions program)))
+    (format nil "~A~%~%~A~%~%~A~%~%~A~%~%~A"
+            includes
+            struct-definitions
+            memories
+            prototypes
+            definitions)))
