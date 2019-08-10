@@ -177,8 +177,7 @@
    :uint4-z
    :uint4-w
    :uint4-p
-   :uint4-=
-   ))
+   :uint4-=))
 (in-package :oclcl.lang.data)
 
 

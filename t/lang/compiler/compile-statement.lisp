@@ -1,3 +1,4 @@
+
 #|
   This file is a part of oclcl project.
   Copyright (c) 2012 Masayuki Takagi (kamonama@gmail.com)
@@ -12,7 +13,8 @@
         :oclcl.lang.type
         :oclcl.lang.syntax
         :oclcl.lang.environment
-        :oclcl.lang.compiler.compile-statement)
+        :oclcl.lang.compiler.compile-statement
+        :oclcl.lang.user-type)
   (:import-from :oclcl.lang.compiler.compile-statement
                 :compile-macro
                 :compile-if
@@ -23,8 +25,18 @@
                 :compile-set
                 :compile-progn
                 :compile-return
-                :compile-function))
+                :compile-function
+                :compile-with-array))
 (in-package :oclcl-test.lang.compiler.compile-statement)
+
+;; add a dummy user-struct
+(setf (symbol-user-struct 'foo)
+      (make-instance 'ocl-struct :ocl-name 'foo :slots '(bar baz) :accessors '(foo-bar foo-baz))
+      (symbol-user-struct-slot 'foo-bar)
+      (make-instance 'ocl-struct-slot :struct 'foo :type 'int :accessor 'foo-bar :ocl-name 'bar)
+      (symbol-user-struct-slot 'foo-baz)
+      (make-instance 'ocl-struct-slot :struct 'foo :type 'float :accessor 'foo-baz :ocl-name
+                     'baz))
 
 (plan nil)
 
@@ -142,11 +154,13 @@
     (%test-compile-statement #'compile-with-local-memory lisp-code c-code message))
 
   (test-local-memory '(with-local-memory ((a int 16)
-                                          (b float 16 16))
+                                          (b float 16 16)
+                                          (c foo 3))
                        (return))
                      (unlines "{"
                               "  __local int a[16];"
                               "  __local float b[16][16];"
+                              "  __local foo c[3];"
                               "  return;"
                               "}")
                      "basic case 1")
@@ -208,6 +222,78 @@
     (let ((lisp-code '(with-local-memory ((a float 16 16))
                        (set (aref a 0) 1.0f0))))
       (is-error (compile-with-local-memory lisp-code var-env func-env)
+                simple-error))))
+
+;;;
+;;; test COMPILE-WITH-LOCAL-MEMORY function
+;;;
+
+(subtest "COMPILE-WITH-ARRAY"
+  (defun test-array (lisp-code c-code message)
+    (%test-compile-statement #'compile-with-array lisp-code c-code message))
+  (test-array '(with-array ((a int 16)
+                            (b float 16 16)
+                            (c foo 3))
+                       (return))
+                     (unlines "{"
+                              "  int a[16];"
+                              "  float b[16][16];"
+                              "  foo c[3];"
+                              "  return;"
+                              "}")
+                     "basic case 1")
+
+  (test-array '(with-array () (return))
+                     (unlines "{"
+                              "  return;"
+                              "}")
+                     "basic case 2")
+
+  (test-array '(with-array ())
+                     (unlines "{"
+                              "}")
+                     "basic case 3")
+
+  (test-array '(with-array ((a float 16 16))
+                       (set (aref a 0 0) 1.0f0))
+                     (unlines "{"
+                              "  float a[16][16];"
+                              "  a[0][0] = 1.0f;"
+                              "}")
+                     "basic case 5")
+
+  (test-array '(with-array ((a float (+ 16 2)))
+                (set (aref a 0) 1.0f0))
+                     (unlines "{"
+                              "  float a[(16 + 2)];"
+                              "  a[0] = 1.0f;"
+                              "}")
+                     "set array ")
+  
+  (test-array '(with-array ((a float (+ 16 2)))
+                       (let ((b 0.0f0))
+                         (set b (aref a 0))))
+                     (unlines "{"
+                              "  float a[(16 + 2)];"
+                              "  {"
+                              "    float b = 0.0f;"
+                              "    b = a[0];"
+                              "  }"
+                              "}")
+                     "read from array")
+
+  (multiple-value-bind (var-env func-env) (empty-environment)
+    (let ((lisp-code '(with-array (a float)
+                       (return))))
+      (is-error (compile-with-array lisp-code var-env func-env)
+                simple-error)))
+
+  (multiple-value-bind (var-env func-env) (empty-environment)
+    (let ((lisp-code1 '(with-array ((a float 16 16))
+                        (set (aref a 0) 1.0f0)))
+          (lisp-code2 '(with-array ((a float))
+                        (return a))))
+      (is-error (compile-with-array lisp-code1 var-env func-env)
                 simple-error))))
 
 

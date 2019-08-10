@@ -9,9 +9,13 @@
   (:use :cl
    :oclcl.lang.type
         :oclcl.lang.data)
-  (:export ;; address-of operator
+  (:export
+   ;; address-of operator
    :pointer
 
+   ;; shift operators
+   :<<
+   :>>
    ;; Built-in work-item functions
    :get-work-dim
    :get-global-size
@@ -379,10 +383,17 @@
 
     ;; logical operators
     not  (((bool) bool nil "!"))
+    ;; bitwise logical operators
+    logior ,(mapcar (lambda (type) `((,type ,type) ,type t "|")) +scalar-integer-types+)
+    logand ,(mapcar (lambda (type) `((,type ,type) ,type t "&")) +scalar-integer-types+)
+    
     ;; address-of operator
     pointer (((int)   int*   nil "&")
              ((float) float* nil "&")
              ((double) double* nil "&"))
+    ;; shift operator
+    << (((int uint) int t "<<"))
+    >> (((int uint) int t ">>"))
     ;; built-in vector constructor
     ;; now taken care of by compile-expression to allow all the overloaded constructors
     ;; 
@@ -637,8 +648,10 @@
                                               ((double3 double3) . double3)
                                               ((double4 double4) . double4))
                  collecting `(,argments ,return nil "cross"))
-    dot ,(loop for (argments . return) in '(((float3 float3) . float)
+    dot ,(loop for (argments . return) in '(((float2 float2) . float)
+                                            ((float3 float3) . float)
                                             ((float4 float4) . float)
+                                            ((double2 double2) . double)
                                             ((double3 double3) . double)
                                             ((double4 double4) . double))
                collecting `(,argments ,return nil "dot"))

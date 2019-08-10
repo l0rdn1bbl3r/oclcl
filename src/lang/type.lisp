@@ -55,7 +55,29 @@
            :array-type-p
            :array-type-base
            :array-type-dimension
-           :array-type)
+           :array-type
+           ;; User defined structs
+           :ocl-user-struct-p
+           :ocl-user-struct-accessor-p
+           :symbol-user-struct
+           :symbol-user-struct-slot
+           :unbound-user-struct
+           :unbound-user-struct-slot
+           ;; ocl-struct
+           :ocl-struct
+           ;; readers
+           :struct-ocl-name
+           :struct-c-name
+           :struct-slots
+           :struct-accessors
+           ;; ocl-struct-slot
+           :ocl-struct-slot
+           ;; readers
+           :struct-slot-ocl-name
+           :slot-accessor
+           :struct-slot-c-name
+           :struct-slot-type
+           )
   (:import-from :alexandria
                 :format-symbol))
 (in-package :oclcl.lang.type)
@@ -210,7 +232,8 @@
   (mapcar #'car +structure-table+))
 
 (defun structure-type-p (object)
-  (and (member object +structure-types+)
+  (and (or (member object +structure-types+)
+           (ocl-user-struct-p object))
        t))
 
 (defun structure-cffi-type (type)
@@ -224,13 +247,53 @@
 (defun structure-opencl-type (type)
   (unless (structure-type-p type)
     (error "The value ~S is an invalid type." type))
-  (cadr (assoc type +structure-table+)))
+  (if (ocl-user-struct-p type)
+      (struct-c-name (symbol-user-struct type))
+      (cadr (assoc type +structure-table+))))
 
 (defun structure-accessors (type)
   (unless (structure-type-p type)
     (error "The value ~S is an invalid type." type))
-  (caddr (assoc type +structure-table+)))
+  (if (ocl-user-struct-p type)
+      (struct-slots (symbol-user-struct type))
+      (caddr (assoc type +structure-table+))))
 
+;;;
+;;; User defined structs
+;;;
+
+(defclass ocl-struct ()
+  ((ocl-name :initarg :ocl-name :reader struct-ocl-name)
+   (slots :initarg :slots :reader struct-slots)
+   (accessors :initarg :accessors :reader struct-accessors)))
+
+(defun struct-c-name (ocl-struct)
+  (oclcl.lang.util:c-identifier (struct-ocl-name ocl-struct)))
+
+(defclass ocl-struct-slot ()
+  ((ocl-name :initarg :ocl-name :reader struct-slot-ocl-name)
+   (accessor :initarg :accessor :reader slot-accessor)
+   (type :initarg :type :reader struct-slot-type)
+   (struct :initarg :struct :reader struct-slot-struct)))
+
+(defun struct-slot-c-name (ocl-struct-slot)
+  (oclcl.lang.util:c-identifier (struct-slot-ocl-name ocl-struct-slot)))
+
+(lispn:define-namespace user-struct ocl-struct nil
+  "A namespace for user defined structs.")
+
+(lispn:define-namespace user-struct-slot ocl-struct-slot nil
+  "A namespace for slots of user defined structs.")
+
+(defun ocl-user-struct-p (x)
+  (and (handler-case (symbol-user-struct x)
+         (unbound-user-struct () nil))
+       t))
+
+(defun ocl-user-struct-accessor-p (x)
+  (and (handler-case (symbol-user-struct-slot x)
+         (unbound-user-struct-slot () nil))
+       t))
 
 ;;;
 ;;; Structure type - accessor
@@ -245,20 +308,28 @@
   (cadr (assoc accessor +accessor->structure+)))
 
 (defun structure-accessor-p (accessor)
-  (and (%structure-from-accessor accessor)
+  (and (or (%structure-from-accessor accessor)
+           (ocl-user-struct-accessor-p accessor))
        t))
 
 (defun structure-from-accessor (accessor)
-  (or (%structure-from-accessor accessor)
-      (error "The value ~S is not a structure accessor." accessor)))
+  (typecase accessor
+    (symbol (if (ocl-user-struct-accessor-p accessor)
+                (struct-slot-struct (symbol-user-struct-slot accessor))
+                (%structure-from-accessor accessor)))
+    (t (error "The value ~S is not a structure accessor." accessor))))
 
 (defun structure-accessor-opencl-accessor (accessor)
-  (let ((structure (structure-from-accessor accessor)))
-    (second (assoc accessor (structure-accessors structure)))))
+  (if (ocl-user-struct-accessor-p accessor)
+      (struct-slot-c-name (symbol-user-struct-slot accessor))
+      (let ((structure (structure-from-accessor accessor)))
+        (second (assoc accessor (structure-accessors structure))))))
 
 (defun structure-accessor-return-type (accessor)
-  (let ((structure (structure-from-accessor accessor)))
-    (third (assoc accessor (structure-accessors structure)))))
+  (if (ocl-user-struct-accessor-p accessor)
+      (struct-slot-type (symbol-user-struct-slot accessor))
+      (let ((structure (structure-from-accessor accessor)))
+        (third (assoc accessor (structure-accessors structure))))))
 
 
 ;;;
@@ -283,7 +354,7 @@
   (let ((type-string (princ-to-string type)))
     (cl-ppcre:register-groups-bind (base-string nil)
         (+array-type-regex+ type-string)
-      (intern (string base-string) 'oclcl.lang.type))))
+      (intern (string base-string) (symbol-package type)))))
 
 (defun array-type-stars (type)
   (unless (array-type-p type)
@@ -292,7 +363,7 @@
     (cl-ppcre:register-groups-bind (_ stars-string)
         (+array-type-regex+ type-string)
       (declare (ignore _))
-      (intern (string stars-string) 'oclcl.lang.type))))
+      (intern (string stars-string) 'oclcl.lang.type)))) 
 
 (defun array-type-dimension (type)
   (length (princ-to-string (array-type-stars type))))
@@ -315,4 +386,5 @@
                (not (array-type-p type)))
     (error "The value ~S is an invalid type." type))
   (let ((stars (loop repeat dimension collect #\*)))
-    (format-symbol 'oclcl.lang.type "~A~{~A~}" type stars)))
+    (handler-case (format-symbol (symbol-package type) "~A~{~A~}" type stars)
+      (error () (format-symbol 'oclcl.lang.type "~A~{~A~}" type stars)))))

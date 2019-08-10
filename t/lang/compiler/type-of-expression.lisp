@@ -12,7 +12,8 @@
         :oclcl.lang.type
         :oclcl.lang.syntax
         :oclcl.lang.environment
-        :oclcl.lang.built-in)
+        :oclcl.lang.built-in
+        :oclcl.lang.user-type)
   (:import-from :oclcl.lang.compiler.type-of-expression
                 :type-of-macro
                 :type-of-symbol-macro
@@ -20,7 +21,8 @@
                 :type-of-reference
                 :type-of-inline-if
                 :type-of-arithmetic
-                :type-of-function)
+                :type-of-function
+                :type-of-user-struct)
   (:import-from :arrow-macros
                 :->>))
 (in-package :oclcl-test.lang.compiler.type-of-expression)
@@ -173,5 +175,17 @@
     (is-error (type-of-function '(native-divide 1.0) var-env func-env) simple-error)
     (is (type-of-function '(popcount 1) var-env func-env) 'int)
     (is (type-of-function '(degrees 1.0f0) var-env func-env) 'float)))
+
+(subtest "TYPE-OF-USER-STRUCT"
+  (setf (symbol-user-struct 'foo)
+        (make-instance 'ocl-struct :ocl-name 'foo :slots '(bar baz) :accessors '(foo-bar foo-baz))
+        (symbol-user-struct-slot 'foo-bar)
+        (make-instance 'ocl-struct-slot :struct 'foo :type 'int :accessor 'foo-bar :ocl-name 'bar)
+        (symbol-user-struct-slot 'foo-baz)
+        (make-instance 'ocl-struct-slot :struct 'foo :type 'float :accessor 'foo-baz :ocl-name
+                       'baz))
+  (multiple-value-bind (var-env func-env) (empty-environment)
+    (is (type-of-user-struct '(foo 1 1.2f0) var-env func-env) 'foo)
+    (is-error (type-of-user-struct '(foo 1 1.2d0) var-env func-env) simple-error)))
 
 (finalize)

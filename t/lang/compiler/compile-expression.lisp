@@ -12,6 +12,7 @@
         :oclcl.lang.type
         :oclcl.lang.built-in
         :oclcl.lang.environment
+        :oclcl.lang.user-type
         :oclcl.lang.compiler.compile-expression)
   (:import-from :oclcl.lang.compiler.compile-expression
                 :compile-macro
@@ -21,7 +22,9 @@
                 :compile-reference
                 :compile-inline-if
                 :compile-arithmetic
-                :compile-function))
+                :compile-function
+                :compile-user-struct
+                :compile-vector-literal))
 (in-package :oclcl-test.lang.compiler.compile-expression)
 
 (plan nil)
@@ -192,5 +195,29 @@
     (is (compile-function '(barrier :clk-local-mem-fence) var-env func-env)
         "barrier(CLK_LOCAL_MEM_FENCE)"
         "barrier")))
+
+(subtest "COMPILE-USER-STRUCT"
+  (setf (symbol-user-struct 'foo)
+        (make-instance 'ocl-struct :ocl-name 'foo :slots '(bar baz) :accessors '(foo-bar foo-baz))
+        (symbol-user-struct-slot 'foo-bar)
+        (make-instance 'ocl-struct-slot :struct 'foo :type 'int :accessor 'foo-bar :ocl-name 'bar)
+        (symbol-user-struct-slot 'foo-baz)
+        (make-instance 'ocl-struct-slot :struct 'foo :type 'float :accessor 'foo-baz :ocl-name 'baz))
+  (multiple-value-bind (var-env func-env) (empty-environment)
+    (is (compile-user-struct '(foo 1 1.2f0) var-env func-env)
+        "(foo){1, 1.2f}")))
+
+(subtest "COMPILE-VECTOR-LITERAL"
+  (multiple-value-bind (var-env func-env) (empty-environment)
+    (is (compile-vector-literal '(int4 1 2 3 4) var-env func-env) "(int4)(1, 2, 3, 4)")
+    (is (compile-vector-literal '(int4 1) var-env func-env) "(int4)(1)")
+    (is (compile-vector-literal '(int4 1 (int3 2 3 4)) var-env func-env)
+        "(int4)(1, (int3)(2, 3, 4))")
+    (is (compile-vector-literal '(int4 1 2 (int2 3 4)) var-env func-env)
+        "(int4)(1, 2, (int2)(3, 4))")
+    (is (compile-vector-literal '(int4 (int2 1 2) (int2 3 4)) var-env func-env)
+        "(int4)((int2)(1, 2), (int2)(3, 4))")
+    (is-error (compile-vector-literal '(int4 (int4 1 2 3 4)) var-env func-env)
+              'simple-error)))
 
 (finalize)

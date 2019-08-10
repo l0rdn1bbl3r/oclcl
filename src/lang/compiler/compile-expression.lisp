@@ -33,6 +33,7 @@
     ((inline-if-p form) (compile-inline-if form var-env func-env))
     ((arithmetic-p form) (compile-arithmetic form var-env func-env))
     ((vector-literal-p form) (compile-vector-literal form var-env func-env))
+    ((%user-struct-p form) (compile-user-struct form var-env func-env))
     ((function-p form) (compile-function form var-env func-env))
     (t (error "The value ~S is an invalid expression." form))))
 
@@ -300,11 +301,11 @@
     (destructuring-bind (vec-type &rest contents) form
       (multiple-value-bind (n base-type) (vector-type-length vec-type)
         (case (length contents)
-          (1 (let ((cont-type (type-of-expression (car contents) var-env func-env)))
-               (if (eq base-type stype)
+          (1 (let ((content-type (type-of-expression (car contents) var-env func-env)))
+               (if (eq base-type content-type)
                    (format nil "~((~A)(~A)~)" vec-type (compile-expression (car contents)
                                                                            var-env func-env))
-                   (%error vec-type stype))))
+                   (%error vec-type content-type))))
           (t (let ((sum (reduce #'+ (mapcar (lambda (expr)
                                               (let ((type (type-of-expression expr var-env func-env)))
                                                 (cond ((eq type base-type)
@@ -312,11 +313,11 @@
                                                       ((scalar-type-p type)
                                                        (%error vec-type type))
                                                       (t
-                                                       (multiple-value-bind (m stype)
+                                                       (multiple-value-bind (m content-type)
                                                            (vector-type-length type)
-                                                         (if (eq base-type stype)
+                                                         (if (eq base-type content-type)
                                                              m
-                                                             (%error vec-type stype)))))))
+                                                             (%error vec-type content-type)))))))
                                             contents))))
                (if (= n sum)
                    (format nil "~((~A)(~{~A~^, ~})~)" vec-type
@@ -325,3 +326,33 @@
                                    contents))
                    (error "The lengths ~A and ~A of the vector and its contents don't match."
                           n sum)))))))))
+
+;;;
+;;; User defined structs
+;;;
+
+(defun %user-struct-p (form)
+  (handler-case (symbol-user-struct (car form))
+    (unbound-user-struct () nil)))
+
+(defun compile-user-struct (form var-env func-env)
+  (destructuring-bind (struct-type &rest init-args) form
+    (let* ((struct (symbol-user-struct struct-type))
+           (accs (struct-accessors struct)))
+      (unless (= (length accs) (length init-args))
+        (error "The lengths of the struct slots ~a and the init-args ~a don't match." accs init-args))
+      (mapc (lambda (acc arg)
+              (let* ((slot (symbol-user-struct-slot acc))
+                     (name (struct-slot-ocl-name slot))
+                     (slot-type (struct-slot-type slot))
+                     (arg-type (type-of-expression arg var-env func-env)))
+                (unless (eq slot-type arg-type)
+                  (error "The types ~a of slot ~a and ~a of init-arg ~a don't match."
+                         slot-type name arg-type arg))))
+            accs
+            init-args)
+      (format nil "~((~a){~{~A~^, ~}}~)"
+              struct-type
+              (mapcar (lambda (expr)
+                        (compile-expression expr var-env func-env))
+                      init-args)))))
