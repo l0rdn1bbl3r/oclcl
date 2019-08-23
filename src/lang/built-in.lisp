@@ -29,7 +29,8 @@
    ;; Built-in type casting
    :to-int
    :to-float
-
+   :to-double
+   
    ;; Built-in math functions
    :acos
    :acosh
@@ -409,6 +410,7 @@
     double-to-int-rn (((double) int nil "__double2int_rn"))
     to-int ((,#'allow-any-types int nil "(int)"))
     to-float ((,#'allow-any-types float nil "(float)"))
+    to-double ((,#'allow-any-types double nil "(double)"))
 
     ;; OpenCL v1.2 dr19: 6.12.1 Work-Item Functions
     get-work-dim ((() uint nil "get_work_dim"))

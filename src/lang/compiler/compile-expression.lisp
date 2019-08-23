@@ -290,14 +290,15 @@
 ;;; Vector Literal
 ;;;
 
-(defun vector-type-length (vec-type)
+(defun vector-type-length (vec-type) 
   (let ((str (string vec-type)))
     (values (parse-integer (remove-if #'alpha-char-p str))
             (intern (remove-if-not #'alpha-char-p str)))))
 
 (defun compile-vector-literal (form var-env func-env)
-  (flet ((%error (t1 t2)
-           (error "The types ~A and ~A of the vector and its contents don't match." t1 t2)))
+  (flet ((%error (t1 t2 &optional base-type)
+           (error "The types ~A and ~A (debug: base-type ~a) of the vector and its contents don't
+  match." t1 t2 base-type)))
     (destructuring-bind (vec-type &rest contents) form
       (multiple-value-bind (n base-type) (vector-type-length vec-type)
         (case (length contents)
@@ -308,14 +309,16 @@
                    (%error vec-type content-type))))
           (t (let ((sum (reduce #'+ (mapcar (lambda (expr)
                                               (let ((type (type-of-expression expr var-env func-env)))
-                                                (cond ((eq type base-type)
+                                                (cond ((string= (symbol-name type)
+                                                                (symbol-name base-type))
                                                        1)
                                                       ((scalar-type-p type)
-                                                       (%error vec-type type))
+                                                       (%error vec-type type base-type))
                                                       (t
                                                        (multiple-value-bind (m content-type)
                                                            (vector-type-length type)
-                                                         (if (eq base-type content-type)
+                                                         (if (string= (symbol-name base-type)
+                                                                      (symbol-name content-type))
                                                              m
                                                              (%error vec-type content-type)))))))
                                             contents))))
