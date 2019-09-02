@@ -27,7 +27,12 @@
    :get-global-offset
 
    ;; Built-in type casting
+   :to-uchar
+   :to-char
+   :to-uint
    :to-int
+   :to-ulong
+   :to-long
    :to-float
    :to-double
    
@@ -408,7 +413,12 @@
     ;;
     ;; type casting intrinsics
     double-to-int-rn (((double) int nil "__double2int_rn"))
+    to-uchar ((,#'allow-any-types uchar nil "(uchar)"))
+    to-char ((,#'allow-any-types char nil "(char)"))
+    to-uint ((,#'allow-any-types uint nil "(uint)"))
     to-int ((,#'allow-any-types int nil "(int)"))
+    to-ulong ((,#'allow-any-types ulong nil "(ulong)"))
+    to-long ((,#'allow-any-types long nil "(long)"))
     to-float ((,#'allow-any-types float nil "(float)"))
     to-double ((,#'allow-any-types double nil "(double)"))
 
