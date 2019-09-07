@@ -35,6 +35,10 @@
    :to-long
    :to-float
    :to-double
+
+   ;; Reinterpreting Types
+   :as-uchar2
+   :as-uchar4
    
    ;; Built-in math functions
    :acos
@@ -421,6 +425,12 @@
     to-long ((,#'allow-any-types long nil "(long)"))
     to-float ((,#'allow-any-types float nil "(float)"))
     to-double ((,#'allow-any-types double nil "(double)"))
+
+    ;; Reinterpreting types
+    as-uchar2 (((short) uchar2 nil "as_uchar2"))
+    as-uchar4 (((int) uchar4 nil "as_uchar4")
+               ((uint) uchar4 nil "as_uchar4")
+               ((float) uchar4 nil "as_uchar4"))
 
     ;; OpenCL v1.2 dr19: 6.12.1 Work-Item Functions
     get-work-dim ((() uint nil "get_work_dim"))
