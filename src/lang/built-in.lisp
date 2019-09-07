@@ -35,6 +35,7 @@
    :to-long
    :to-float
    :to-double
+   :to-bool
 
    ;; Reinterpreting Types
    :as-uchar2
@@ -425,6 +426,7 @@
     to-long ((,#'allow-any-types long nil "(long)"))
     to-float ((,#'allow-any-types float nil "(float)"))
     to-double ((,#'allow-any-types double nil "(double)"))
+    to-bool ((,#'allow-any-types bool nil "(bool)"))
 
     ;; Reinterpreting types
     as-uchar2 (((short) uchar2 nil "as_uchar2"))
